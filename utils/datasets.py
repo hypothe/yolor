@@ -3,6 +3,7 @@
 import glob
 import math
 import os
+import re
 import random
 import shutil
 import time
@@ -369,7 +370,9 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         def img2label_paths(img_paths):
             # Define label paths as a function of image paths
             sa, sb = os.sep + 'images' + os.sep, os.sep + 'labels' + os.sep  # /images/, /labels/ substrings
-            return [x.replace(sa, sb, 1).replace(x.split('.')[-1], 'txt') for x in img_paths]
+
+            #return [x.replace(sa, sb, 1).replace(x.split('.')[-1], 'txt') for x in img_paths]
+            return [x.replace(sa, sb, 1)[:x.rfind('.')+1] + 'txt' for x in img_paths]
 
         try:
             f = []  # image files
@@ -391,6 +394,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
 
         # Check cache
         self.label_files = img2label_paths(self.img_files)  # labels
+#
         cache_path = str(Path(self.label_files[0]).parent) + '.cache3'  # cached labels
         if os.path.isfile(cache_path):
             cache = torch.load(cache_path)  # load
@@ -425,6 +429,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             self.shapes = s[irect]  # wh
             ar = ar[irect]
 
+
             # Set training image shapes
             shapes = [[1, 1]] * nb
             for i in range(nb):
@@ -441,6 +446,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         create_datasubset, extract_bounding_boxes, labels_loaded = False, False, False
         nm, nf, ne, ns, nd = 0, 0, 0, 0, 0  # number missing, found, empty, datasubset, duplicate
         pbar = enumerate(self.label_files)
+
         if rank in [-1, 0]:
             pbar = tqdm(pbar)
         for i, file in pbar:
@@ -686,6 +692,7 @@ class LoadImagesAndLabels9(Dataset):  # for training/testing
         cache.pop('hash')  # remove hash
         labels, shapes = zip(*cache.values())
         self.labels = list(labels)
+
         self.shapes = np.array(shapes, dtype=np.float64)
         self.img_files = list(cache.keys())  # update
         self.label_files = img2label_paths(cache.keys())  # update
